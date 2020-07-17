@@ -38,16 +38,24 @@ def find_corners(img):
     bottom_left, _ = min(enumerate(pt[0][0] - pt[0][1] for pt in polygon), key=operator.itemgetter(1))
     bottom_right, _ = max(enumerate(pt[0][0] + pt[0][1] for pt in polygon), key=operator.itemgetter(1))
     return [polygon[top_left][0], polygon[top_right][0], polygon[bottom_right][0], polygon[bottom_left][0]]
+def distance_between_points(p1, p2):
+    a = p2[0] - p1[0]
+    b = p2[1] - p1[1]
+    return np.sqrt(pow(a, 2) + pow(b, 2))
 
+def fix_tilt(img, corners):
+    top_left, top_right, bottom_right, bottom_left = corners[0], corners[1], corners[2], corners[3]
+    src = np.array([top_left, top_right, bottom_right, bottom_left], dtype='float32')
+    side = max(distance_between_points(top_left, bottom_left),
+               distance_between_points(top_left, top_right),
+               distance_between_points(top_right, bottom_right),
+               distance_between_points(top_right, bottom_right))
+    dst = np.array([[0,0], [side-1, 0], [side-1, side-1], [0, side-1]], dtype='float32')
+    m = cv2.getPerspectiveTransform(src, dst)
+    return cv2.warpPerspective(img, m, (int(side), int(side)))
 
 img = cv2.imread("image.png", cv2.IMREAD_GRAYSCALE)
-img1 = cv2.imread("image.png", cv2.COLOR_GRAY2BGR)
 result = pre_processing(img)
 corners = find_corners(result)
-display_points(result, corners)
-for point in corners:
-    print([x for x in point])
-    # print(tuple(x for x in point))
-# cv2.imshow("image", external_only)
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
+tilt = fix_tilt(result, corners)
+show_image(tilt)
