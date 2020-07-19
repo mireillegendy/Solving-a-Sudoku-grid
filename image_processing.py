@@ -3,15 +3,12 @@ import numpy as np
 import operator
 from matplotlib import pyplot as plt
 def show_image(img):
-	"""Shows an image until any key is pressed"""
-	cv2.imshow('image', img)  # Display the image
-	cv2.waitKey(0)  # Wait for any key to be pressed (with the image window active)
-	cv2.destroyAllWindows()  # Close all windows
-def display_points(in_img, points, radius=5, colour=(0, 0, 255)):
-	"""Draws circular points on an image."""
-	img = in_img.copy()
 
-	# Dynamically change to a colour image if necessary
+	cv2.imshow('image', img)
+	cv2.waitKey(0)
+	cv2.destroyAllWindows()
+def display_points(in_img, points, radius=5, colour=(0, 0, 255)):
+	img = in_img.copy()
 	if len(colour) == 3:
 		if len(img.shape) == 2:
 			img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
@@ -54,8 +51,45 @@ def fix_tilt(img, corners):
     m = cv2.getPerspectiveTransform(src, dst)
     return cv2.warpPerspective(img, m, (int(side), int(side)))
 
+def scale(x,r): return x*r
+
+
+def scale_centre(img, size, margin=0, background=0):
+    h, w = img.shape
+    def centre_pad(length):
+        if length % 2 == 0:
+            side1 = int((size-length)/2)
+            side2=side1
+        else:
+            side1 = int((size - length)/2)
+            side2 = side1+1
+        return side1, side2
+    if h > w:
+        t_pad = int(margin/2)
+        b_pad = t_pad
+        ratio = (size-margin)/h
+        h,w = int(scale(ratio, h)), int(scale(ratio, w))
+        l_pad, r_pad = centre_pad(w)
+    else:
+        l_pad = int(margin/2)
+        r_pad = l_pad
+        ratio = (size-margin) / w
+        h, w = int(scale(ratio, h)), int(scale(ratio, w))
+        t_pad, b_pad = centre_pad(h)
+    img = cv2.resize(img, (w,h))
+    img = cv2.copyMakeBorder(img, t_pad, b_pad, l_pad, r_pad, cv2.BORDER_CONSTANT, None, background)
+    return cv2.resize(img, (size, size))
+
+
+
+
+
+
 img = cv2.imread("image.png", cv2.IMREAD_GRAYSCALE)
 result = pre_processing(img)
 corners = find_corners(result)
-tilt = fix_tilt(result, corners)
-show_image(tilt)
+alligned_result = fix_tilt(result, corners)
+img1 = scale_centre(alligned_result, 500)
+show_image(img1)
+h,w = img.shape
+print(w)

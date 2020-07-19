@@ -47,7 +47,7 @@ def search(values):
     if values is False: return False
     if all(len(values[s]) == 1 for s in squares):
         return values
-    n,s = min((len(values[s]), s) for s in squares if len(values[s]) > 1)
+    n, s = min((len(values[s]), s) for s in squares if len(values[s]) > 1)
     return some(search(assign(values.copy(), s, d)) for d in values[s])
 def some(seq):
     for e in seq:
@@ -63,8 +63,7 @@ unitlist = ([cross(rows,c) for c in cols] +
             [cross(r, cols) for r in rows] +
             [cross(rs, cs) for rs in ('ABC', 'DEF', 'GHI') for cs in ('123', '456', '789')])
 
-# print([cross(rs, cs) for rs in ('ABC', 'DEF', 'GHI') for cs in ('123', '456', '789')])
-# print(unitlist)
+
 
 units = dict((s, [u for u in unitlist if s in u]) for s in squares)
 print(units)
