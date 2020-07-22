@@ -79,8 +79,41 @@ def scale_centre(img, size, margin=0, background=0):
     img = cv2.resize(img, (w,h))
     img = cv2.copyMakeBorder(img, t_pad, b_pad, l_pad, r_pad, cv2.BORDER_CONSTANT, None, background)
     return cv2.resize(img, (size, size))
-
-
+def find_largest_area(inp_img, scan_tl=None, scan_bl=None):
+    img = inp_img.copy()
+    max_area = 0
+    seed_point = (None, None)
+    height, width = img.shape
+    if scan_tl == None:
+        scan_tl = [0, 0]
+    if scan_bl == None:
+        scan_bl = [width, height]
+    for x in range(scan_tl[0], scan_bl[0]):
+        for y in range(scan_tl[1], scan_bl[1]):
+            if img[y, x] == 255:
+                area = cv2.floodFill(img, None, (x, y), 64)
+                if area[0] > max_area:
+                    max_area = area[0]
+                    seed_point = (x, y)
+    for x in range(width):
+        for y in range(height):
+            if img[y, x] == 255:
+                cv2.floodFill(img, None, (x, y), 64)
+    mask = np.zeros((height + 2, width + 2), np.uint8)
+    if all([p is not None for p in seed_point]):
+        cv2.floodFill(img, mask, seed_point, 255)
+    top, bottom, right, left = height, 0, 0, width
+    for x in range(width):
+        for y in range(height):
+            if img[y, x] == 64:
+                cv2.floodFill(img, mask, (x, y), 0)
+            if img[y, x] == 255:
+                if x < left: left = x
+                if x > right: right = x
+                if y < top: top = y
+                if y > bottom: bottom = y
+    bbox = [[left, top], [right, right]]
+    return img, np.array(bbox, dtype='float32'), seed_point
 
 
 
@@ -89,7 +122,6 @@ img = cv2.imread("image.png", cv2.IMREAD_GRAYSCALE)
 result = pre_processing(img)
 corners = find_corners(result)
 alligned_result = fix_tilt(result, corners)
-img1 = scale_centre(alligned_result, 500)
-show_image(img1)
-h,w = img.shape
-print(w)
+result1, arrayresult, seed = find_largest_area(alligned_result)
+show_image(result1)
+
