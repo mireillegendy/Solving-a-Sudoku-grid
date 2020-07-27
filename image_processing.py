@@ -18,6 +18,7 @@ def display_points(in_img, points, radius=5, colour=(0, 0, 255)):
 		img = cv2.circle(img, tuple(x for x in point), radius, colour, -1)
 	show_image(img)
 	return img
+
 def pre_processing(img, skip_dilate=False):
     proc = cv2.GaussianBlur(img.copy(), (9,9), 0)
     proc = cv2.adaptiveThreshold(proc,255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
@@ -112,16 +113,52 @@ def find_largest_area(inp_img, scan_tl=None, scan_bl=None):
                 if x > right: right = x
                 if y < top: top = y
                 if y > bottom: bottom = y
-    bbox = [[left, top], [right, right]]
+    bbox = [[left, top], [right, bottom]]
     return img, np.array(bbox, dtype='float32'), seed_point
+def cut_rect_from_img(img, rect): #knowing that rect = [[topx, topy], [bottomx, bottomy]]
+    return img[int(rect[0][1]):int(rect[1][1]), int(rect[0][0]):int(rect[1][0])]
 
-
+def extract_digits(img, rect, size):
+    digit = cut_rect_from_img(img, rect)
+    h, w = digit.shape[:2]
+    margin = int(np.mean([h, w])/2.5)
+    _, bbox, seed = find_largest_area(digit, [margin, margin], [w-margin, h-margin])
+    digit = cut_rect_from_img(digit, bbox)
+    w = bbox[1][0] - bbox[0][0]
+    h = bbox[1][1] - bbox[0][1]
+    if w > 0 and h > 0 and (w*h) > 100 and len(digit) > 0:
+        return scale_centre(digit, size, 4)
+    else:
+        return np.zeros((size, size), np.uint8)
+def divide_grid(img):
+    squares = []
+    side = img.shape[:1]
+    side = side[0]/9
+    for i in range(9):
+        for j in range(9):
+            p1 = (i*side, j*side)
+            p2 = ((i+1)*side, (j+1)*side)
+            squares.append((p1, p2))
+    return squares
+def get_digits(img, squares, size):
+    digits = []
+    img = pre_processing(img.copy(), skip_dilate=True)
+    for square in squares:
+        digits.append(extract_digits(img, square, size))
+    return digits
+def display_digits(digits, colour = 255):
+    rows = []
+    with_borders = [cv2.copyMakeBorder(img.copy(), 1, 1, 1, 1, cv2.BORDER_CONSTANT,None, colour) for img in digits]
+    for i in range(9):
+        row = np.concatenate(with_borders[i*9: (i+1)*9], axis=1)
+        rows.append(row)
+    return show_image(np.concatenate(rows))
 
 
 img = cv2.imread("image.png", cv2.IMREAD_GRAYSCALE)
-result = pre_processing(img)
-corners = find_corners(result)
-alligned_result = fix_tilt(result, corners)
-result1, arrayresult, seed = find_largest_area(alligned_result)
-show_image(result1)
-
+processed = pre_processing(img)
+corners = find_corners(processed)
+cropped = fix_tilt(img, corners)
+squares = divide_grid(cropped)
+digits = get_digits(cropped, squares, 28)
+display_digits(digits)
