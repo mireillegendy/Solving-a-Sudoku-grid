@@ -120,7 +120,7 @@ def cut_rect_from_img(img, rect): #knowing that rect = [[topx, topy], [bottomx, 
 
 def extract_digits(img, rect, size):
     digit = cut_rect_from_img(img, rect)
-    h, w = digit.shape[:2]
+    h, w = digit.shape
     margin = int(np.mean([h, w])/2.5)
     _, bbox, seed = find_largest_area(digit, [margin, margin], [w-margin, h-margin])
     digit = cut_rect_from_img(digit, bbox)
