@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import operator
-from matplotlib import pyplot as plt
+# from matplotlib import pyplot as plt
 def show_image(img):
 
 	cv2.imshow('image', img)
@@ -162,3 +162,11 @@ cropped = fix_tilt(img, corners)
 squares = divide_grid(cropped)
 digits = get_digits(cropped, squares, 28)
 display_digits(digits)
+# cap = cv2.VideoCapture(0)
+# while True:
+#    ret, frame = cap.read()
+#    cv2.imshow('frame', frame)
+#    if cv2.waitKey(1) & 0xFF == ord('q'):
+#         break
+# cap.release()
+# cv2.destroyAllWindows()
