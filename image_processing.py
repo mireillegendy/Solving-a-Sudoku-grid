@@ -1,7 +1,11 @@
 import cv2
 import numpy as np
 import operator
-# from matplotlib import pyplot as plt
+import tensorflow as tf
+import keras.backend as kb
+# from digit_recongnition_model import x_train_raw, y_train_raw, final_model, x_test_raw
+from cnn_model import CNN_model, x_train_raw, y_train_raw, x_test_raw
+from matplotlib import pyplot as plt
 def show_image(img):
 
 	cv2.imshow('image', img)
@@ -146,7 +150,7 @@ def get_digits(img, squares, size):
     for square in squares:
         digits.append(extract_digits(img, square, size))
     return digits
-def display_digits(digits, colour = 255):
+def display_digits(digits, colour):
     rows = []
     with_borders = [cv2.copyMakeBorder(img.copy(), 1, 1, 1, 1, cv2.BORDER_CONSTANT,None, colour) for img in digits]
     for i in range(9):
@@ -155,18 +159,42 @@ def display_digits(digits, colour = 255):
     return show_image(np.concatenate(rows))
 
 
-img = cv2.imread("image.png", cv2.IMREAD_GRAYSCALE)
+img = cv2.imread("hand_written.png", cv2.IMREAD_GRAYSCALE)
 processed = pre_processing(img)
 corners = find_corners(processed)
 cropped = fix_tilt(img, corners)
 squares = divide_grid(cropped)
 digits = get_digits(cropped, squares, 28)
-display_digits(digits)
-# cap = cv2.VideoCapture(0)
-# while True:
-#    ret, frame = cap.read()
-#    cv2.imshow('frame', frame)
-#    if cv2.waitKey(1) & 0xFF == ord('q'):
-#         break
-# cap.release()
-# cv2.destroyAllWindows()
+zero_img = None
+for i in range(0, len(y_train_raw)):
+    if y_train_raw[i] == 0:
+        zero_img = x_train_raw[i]
+        break
+
+read_digits = []
+for i in range(0, len(digits)):
+    if cv2.countNonZero(digits[i]) == 0:
+        read_digits.append(zero_img)
+    else:
+        read_digits.append(digits[i])
+        for w in range(0,28):
+            for h in range(0,28):
+                if read_digits[i][h][w]==255:
+                        read_digits[i][h][w]=64
+
+array_digits = np.array(read_digits)
+array_digits_raw = array_digits
+if kb.image_data_format == 'channels_first':
+    array_digits = array_digits.reshape(array_digits.shape[0], 1, 28, 28)
+    input_shape = (1, 28, 28)
+else:
+    array_digits = array_digits.reshape(array_digits.shape[0], 28, 28, 1)
+    input_shape = (28, 28, 1)
+array_digits = array_digits.astype('float32')
+array_digits = tf.keras.utils.normalize(array_digits, axis=1)
+predictions = CNN_model.predict([array_digits])
+for i in range(0, len(read_digits)):
+   print(np.argmax(predictions[i]))
+   show_image(read_digits[i])
+
+
