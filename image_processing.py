@@ -3,11 +3,9 @@ import numpy as np
 import operator
 import tensorflow as tf
 import keras.backend as kb
-# from digit_recongnition_model import x_train_raw, y_train_raw, final_model, x_test_raw
-from cnn_model import CNN_model, x_train_raw, y_train_raw, x_test_raw
-from matplotlib import pyplot as plt
-def show_image(img):
+from cnn_model import x_train_raw, y_train_raw
 
+def show_image(img):
 	cv2.imshow('image', img)
 	cv2.waitKey(0)
 	cv2.destroyAllWindows()
@@ -144,6 +142,16 @@ def divide_grid(img):
             p2 = ((i+1)*side, (j+1)*side)
             squares.append((p1, p2))
     return squares
+def data_set_pre_processing(dataset):
+    if kb.image_data_format == 'channels_first':
+        dataset = dataset.reshape(dataset.shape[0], 1, 28, 28)
+    else:
+        dataset = dataset.reshape(dataset.shape[0], 28, 28, 1)
+    dataset = dataset.astype('float32')
+    dataset = tf.keras.utils.normalize(dataset, axis=1)
+    return dataset
+
+
 def get_digits(img, squares, size):
     digits = []
     img = pre_processing(img.copy(), skip_dilate=True)
@@ -158,43 +166,41 @@ def display_digits(digits, colour):
         rows.append(row)
     return show_image(np.concatenate(rows))
 
+def format_puzzle(puzzle):
+    formatted = ''
+    for j in range(0, 9):
+        for i in range(0, 9):
+            formatted = formatted + puzzle[i*9 + j]
+    return formatted
+def img_digit(index):
+    digit_img = [0 for i in range(0, 10)]
+    if 0 in digit_img:
+        for i in range(0, len(y_train_raw)):
+            if y_train_raw[i] == 0:
+                # zero_img = x_train_raw[i]
+                digit_img[0] = x_train_raw[i]
+            if y_train_raw[i] == 1:
+                digit_img[1] = x_train_raw[i]
+            if y_train_raw[i] == 2:
+                digit_img[2] = x_train_raw[i]
+            if y_train_raw[i] == 3:
+                digit_img[3] = x_train_raw[i]
+            if y_train_raw[i] == 4:
+                digit_img[4] = x_train_raw[i]
+            if y_train_raw[i] == 5:
+                digit_img[5] = x_train_raw[i]
+            if y_train_raw[i] == 6:
+                digit_img[6] = x_train_raw[i]
+            if y_train_raw[i] == 7:
+                digit_img[7] = x_train_raw[i]
+            if y_train_raw[i] == 8:
+                digit_img[8] = x_train_raw[i]
+            if y_train_raw[i] == 9:
+                digit_img[9] = x_train_raw[i]
+    return digit_img[index]
 
-img = cv2.imread("hand_written.png", cv2.IMREAD_GRAYSCALE)
-processed = pre_processing(img)
-corners = find_corners(processed)
-cropped = fix_tilt(img, corners)
-squares = divide_grid(cropped)
-digits = get_digits(cropped, squares, 28)
-zero_img = None
-for i in range(0, len(y_train_raw)):
-    if y_train_raw[i] == 0:
-        zero_img = x_train_raw[i]
-        break
 
-read_digits = []
-for i in range(0, len(digits)):
-    if cv2.countNonZero(digits[i]) == 0:
-        read_digits.append(zero_img)
-    else:
-        read_digits.append(digits[i])
-        for w in range(0,28):
-            for h in range(0,28):
-                if read_digits[i][h][w]==255:
-                        read_digits[i][h][w]=64
 
-array_digits = np.array(read_digits)
-array_digits_raw = array_digits
-if kb.image_data_format == 'channels_first':
-    array_digits = array_digits.reshape(array_digits.shape[0], 1, 28, 28)
-    input_shape = (1, 28, 28)
-else:
-    array_digits = array_digits.reshape(array_digits.shape[0], 28, 28, 1)
-    input_shape = (28, 28, 1)
-array_digits = array_digits.astype('float32')
-array_digits = tf.keras.utils.normalize(array_digits, axis=1)
-predictions = CNN_model.predict([array_digits])
-for i in range(0, len(read_digits)):
-   print(np.argmax(predictions[i]))
-   show_image(read_digits[i])
+
 
 

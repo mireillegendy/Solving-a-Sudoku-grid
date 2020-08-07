@@ -1,16 +1,38 @@
 def cross(A, B):
     return [a+b for a in A for b in B]
+digits = '123456789'
+rows = 'ABCDEFGHI'
+cols = digits
+squares = cross(rows, cols)
+# print(squares)
+unitlist = ([cross(rows,c) for c in cols] +
+            [cross(r, cols) for r in rows] +
+            [cross(rs, cs) for rs in ('ABC', 'DEF', 'GHI') for cs in ('123', '456', '789')])
+
+
+
+units = dict((s, [u for u in unitlist if s in u]) for s in squares)
+# print(units)
+peers = dict((s, set(sum(units[s], [])) - set([s])) for s in squares)
+
 
 def grid_values(grid):
     chars = [c for c in grid if c in digits or c in '0.']
     assert len(chars) == 81
     return dict(zip(squares, chars))
+def display(values):
+    width = 1+max(len(values[s]) for s in squares)
+    line = '+'.join(['-'*(width*3)]*3)
+    for r in rows:
+        print (''.join(values[r+c].center(width)+('|' if c in '36' else '') for c in cols))
+        if r in 'CF': print(line)
+    print
 def parse_grid(grid):
     values = dict((s, digits) for s in squares)
     for s, d in grid_values(grid).items():
         if d in digits and not assign(values, s, d):
             return False
-        return values
+    return values
 def assign(values, s, d):
     other_values = values[s].replace(d, "")
     if all(eliminate(values, s, d2) for d2 in other_values):
@@ -54,21 +76,12 @@ def some(seq):
         if e: return e
     return False
 
-digits = '123456789'
-rows = 'ABCDEFGHI'
-cols = digits
-squares = cross(rows, cols)
-# print(squares)
-unitlist = ([cross(rows,c) for c in cols] +
-            [cross(r, cols) for r in rows] +
-            [cross(rs, cs) for rs in ('ABC', 'DEF', 'GHI') for cs in ('123', '456', '789')])
-
-
-
-units = dict((s, [u for u in unitlist if s in u]) for s in squares)
-print(units)
-peers = dict((s, set(sum(units[s], [])) - set([s])) for s in squares)
-print(peers)
+# print(peers)
 grid1 = "003020600900305001001806400008102900700000008006708200002609500800203009005010300"
+# grid1 = grid1.replace('0','.')
 grid = "4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......"
-print(solve(grid1))
+grid2 = '000604700706000009000005080070020093800000005430010070050200000300000008002301000'
+solved = solve(grid2)
+display(parse_grid(grid2))
+print(solved)
+
